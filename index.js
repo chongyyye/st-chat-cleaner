@@ -243,7 +243,7 @@ async function executeClean(mode) {
 
             const freed = await applyCleanToActiveChat(opts);
 
-            const msg = `🎉 瘦身大获成功！已自动创建安全备份，当前聊天直接释放了 ${formatBytes(freed)} 空间（减少近一半）！`;
+            const msg = `🎉 瘦身完成！已自动创建安全备份，当前聊天已释放 ${formatBytes(freed)} 空间。`;
             if (window.toastr) window.toastr.success(msg, '净化完成', { timeOut: 5000 });
             showLog(msg);
 
@@ -280,7 +280,7 @@ async function executeClean(mode) {
 
             const freed = await applyCleanToActiveChat(opts);
 
-            const msg = `🌿 新分支已创建并完成瘦身！释放空间: ${formatBytes(freed)}，原始聊天不受影响。`;
+            const msg = `🌿 新分支已创建并完成瘦身！已释放空间: ${formatBytes(freed)}，原始聊天不受影响。`;
             if (window.toastr) window.toastr.success(msg, '分支净化成功', { timeOut: 5000 });
             showLog(msg);
 
@@ -380,7 +380,7 @@ async function executeClean(mode) {
             URL.revokeObjectURL(url);
 
             const freed = Math.max(0, origTotalBytes - blob.size);
-            const msg = `📥 净化版文件已导出！体积成功缩减了 ${formatBytes(freed)}（直接砍掉近半）！`;
+            const msg = `📥 净化版文件已导出！已释放 ${formatBytes(freed)} 空间。`;
             if (window.toastr) window.toastr.success(msg);
             showLog(msg);
         } catch (err) {
