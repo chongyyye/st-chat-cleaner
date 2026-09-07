@@ -1,4 +1,4 @@
-// SillyTavern Chat Cleaner Extension v1.1
+// SillyTavern Chat Cleaner Extension v1.2
 // 聊天记录瘦身净化器 - 100% 本地运行，零 API 消耗
 
 const MODULE_NAME = 'st_chat_cleaner';
@@ -205,7 +205,7 @@ async function applyCleanToActiveChat(opts) {
         }
     }
 
-    // 3. 【最关键一步】双重保存：必须同时保存 Metadata 和 Chat 才能彻底写入硬盘！
+    // 3. 【双重保存】同时保存 Metadata 和 Chat 才能彻底写入硬盘！
     if (typeof context.saveMetadata === 'function') {
         await context.saveMetadata();
     }
@@ -268,7 +268,6 @@ async function executeClean(mode) {
         try {
             if (window.toastr) window.toastr.info('正在创建新分支并进行净化...', '', { timeOut: 3000 });
 
-            // 监听分支切换完成事件
             let switchFinished = false;
             const chatChangeHandler = () => { switchFinished = true; };
             if (context.eventSource && context.event_types) {
@@ -281,7 +280,7 @@ async function executeClean(mode) {
                 await window.executeSlashCommands('/branch-create');
             }
 
-            // 手机 Termux 读写大文件较慢，等待分支完全加载 (最多等 2.5 秒)
+            // 等待分支完全加载 (最多等 2.5 秒)
             let waitTime = 0;
             while (!switchFinished && waitTime < 2500) {
                 await new Promise(r => setTimeout(r, 200));
@@ -407,15 +406,6 @@ function showLog(text) {
 }
 
 function initEventListeners() {
-    // 折叠展开兼容处理 (防止部分酒馆主题未自动绑定事件)
-    $('.st-chat-cleaner-settings .inline-drawer-toggle').off('click').on('click', function (e) {
-        // 如果点击的是内部按钮，不触发折叠
-        if ($(e.target).closest('button, input, label').length) return;
-        const $drawer = $(this).closest('.inline-drawer');
-        $drawer.find('.inline-drawer-content').stop().slideToggle(200);
-        $drawer.find('.inline-drawer-icon').toggleClass('down');
-    });
-
     $('#st_cleaner_refresh_btn').off('click').on('click', () => {
         analyzeCurrentChat();
         if (window.toastr) window.toastr.info('健康数据已更新');
