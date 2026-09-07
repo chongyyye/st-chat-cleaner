@@ -1,4 +1,4 @@
-// SillyTavern Chat Cleaner Extension
+// SillyTavern Chat Cleaner Extension v1.1
 // 聊天记录瘦身净化器 - 100% 本地运行，零 API 消耗
 
 const MODULE_NAME = 'st_chat_cleaner';
@@ -17,7 +17,7 @@ function formatBytes(bytes) {
     return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
 }
 
-// 计算 UTF-8 字符串的字节大小
+// 计算 UTF-8 字节大小
 function getByteLength(str) {
     if (typeof str !== 'string') {
         try {
@@ -149,173 +149,17 @@ function analyzeCurrentChat() {
     }
 }
 
-// 执行瘦身清洗逻辑
-async function executeClean(mode = 'branch') {
-    const context = getSTContext();
-    if (!context || !context.chat || context.chat.length === 0) {
-        if (window.toastr) window.toastr.warning('当前没有打开任何聊天记录！');
-        return;
-    }
-
-    const opts = getCleanerOptions();
-    const chat = context.chat;
-    const chatMetadata = context.chatMetadata || {};
-
-    const initialTotalBytes = getByteLength(chat) + getByteLength(chatMetadata);
-
-    // 模式 1：另存为净化新分支 (推荐)
-    if (mode === 'branch') {
-        try {
-            if (window.toastr) window.toastr.info('正在创建新分支并进行净化...', '', { timeOut: 2000 });
-
-            // 优先使用酒馆斜杠命令创建分支
-            if (typeof context.executeSlashCommands === 'function') {
-                await context.executeSlashCommands('/branch-create');
-            } else if (typeof window.executeSlashCommands === 'function') {
-                await window.executeSlashCommands('/branch-create');
-            } else {
-                throw new Error('未检测到分支创建支持，请尝试使用“导出净化文件”或“直接覆盖当前聊天”');
-            }
-
-            // 等待分支切换完成
-            await new Promise(resolve => setTimeout(resolve, 600));
-
-            // 对新分支进行清洗
-            await applyCleanToActiveChat(opts);
-
-            const newTotalBytes = getByteLength(context.chat) + getByteLength(context.chatMetadata || {});
-            const freedBytes = Math.max(0, initialTotalBytes - newTotalBytes);
-
-            const successMsg = `🎉 净化完成！已为您生成全新聊天分支，释放空间: ${formatBytes(freedBytes)}，原始记录完好无损！`;
-            if (window.toastr) window.toastr.success(successMsg, '聊天瘦身成功', { timeOut: 5000 });
-            showLog(successMsg);
-
-            analyzeCurrentChat();
-        } catch (err) {
-            console.error('分支创建失败:', err);
-            if (window.toastr) window.toastr.error('创建分支失败：' + err.message);
-        }
-        return;
-    }
-
-    // 模式 2：直接覆盖当前聊天
-    if (mode === 'overwrite') {
-        const confirmed = window.confirm('⚠️ 警告：您选择直接覆盖当前聊天！\n\n该操作将直接修改当前记录并保存。\n建议优先使用【另存为净化新分支】以保护原版。\n\n确定要继续直接覆盖吗？');
-        if (!confirmed) return;
-
-        try {
-            await applyCleanToActiveChat(opts);
-
-            const newTotalBytes = getByteLength(context.chat) + getByteLength(context.chatMetadata || {});
-            const freedBytes = Math.max(0, initialTotalBytes - newTotalBytes);
-
-            const successMsg = `✅ 当前聊天已完成就地瘦身！成功释放 ${formatBytes(freedBytes)} 空间。`;
-            if (window.toastr) window.toastr.success(successMsg, '瘦身成功');
-            showLog(successMsg);
-
-            analyzeCurrentChat();
-        } catch (err) {
-            console.error('覆盖失败:', err);
-            if (window.toastr) window.toastr.error('清理失败：' + err.message);
-        }
-        return;
-    }
-
-    // 模式 3：导出净化版 .jsonl 文件
-    if (mode === 'download') {
-        try {
-            const cleanedLines = [];
-
-            // 1. 构建首行 Chat Metadata
-            const cleanedHeader = {
-                user_name: context.characterId !== undefined && context.characters && context.characters[context.characterId] ? context.characters[context.characterId].name : "User",
-                character_name: "Character",
-                create_date: "",
-                chat_metadata: {}
-            };
-
-            // 处理作者注释与元数据
-            if (chatMetadata) {
-                if (opts.preserveAuthorNote) {
-                    const noteKeys = ['note_prompt', 'note_interval', 'note_position', 'note_depth', 'note_role', 'authors_note', 'author_note'];
-                    for (const k of Object.keys(chatMetadata)) {
-                        if (noteKeys.includes(k) || k.toLowerCase().includes('author') || k.toLowerCase().includes('note')) {
-                            cleanedHeader.chat_metadata[k] = chatMetadata[k];
-                        }
-                    }
-                }
-                if (chatMetadata.integrity) cleanedHeader.chat_metadata.integrity = chatMetadata.integrity;
-
-                if (!opts.cleanLwbSnap) {
-                    if (chatMetadata.LWB_SNAP) cleanedHeader.chat_metadata.LWB_SNAP = chatMetadata.LWB_SNAP;
-                    if (chatMetadata.variables) cleanedHeader.chat_metadata.variables = chatMetadata.variables;
-                }
-            }
-            cleanedLines.push(JSON.stringify(cleanedHeader));
-
-            // 2. 构建清洗后的消息行
-            for (const origMsg of chat) {
-                if (!origMsg) continue;
-                const cleanMsg = {
-                    name: origMsg.name || "",
-                    is_user: !!origMsg.is_user,
-                    is_system: !!origMsg.is_system,
-                    send_date: origMsg.send_date || "",
-                    mes: origMsg.mes || ""
-                };
-
-                if (opts.cleanSwipes) {
-                    cleanMsg.swipes = [cleanMsg.mes];
-                    cleanMsg.swipe_id = 0;
-                } else if (Array.isArray(origMsg.swipes)) {
-                    cleanMsg.swipes = origMsg.swipes;
-                    cleanMsg.swipe_id = origMsg.swipe_id || 0;
-                    if (origMsg.swipe_info) cleanMsg.swipe_info = origMsg.swipe_info;
-                }
-
-                if (!opts.cleanMetadata && origMsg.metadata) {
-                    cleanMsg.metadata = origMsg.metadata;
-                }
-
-                if (!opts.cleanExtra && origMsg.extra) {
-                    cleanMsg.extra = origMsg.extra;
-                }
-
-                cleanedLines.push(JSON.stringify(cleanMsg));
-            }
-
-            // 触发浏览器下载
-            const blob = new Blob([cleanedLines.join('\n')], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            const currentChatName = (context.chatId || '酒馆聊天').replace(/\.jsonl$/i, '');
-            a.download = `[已净化]_${currentChatName}.jsonl`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-
-            const freed = Math.max(0, initialTotalBytes - blob.size);
-            const msg = `📥 文件已成功导出下载！体积缩减了: ${formatBytes(freed)}`;
-            if (window.toastr) window.toastr.success(msg);
-            showLog(msg);
-        } catch (err) {
-            console.error('下载导出失败:', err);
-            if (window.toastr) window.toastr.error('导出失败：' + err.message);
-        }
-    }
-}
-
-// 清理当前激活的聊天并在酒馆中保存生效
+// 核心：彻底清洗当前活跃的聊天并强制持久化
 async function applyCleanToActiveChat(opts) {
     const context = getSTContext();
-    if (!context || !context.chat) return;
+    if (!context || !context.chat) return 0;
 
     const chat = context.chat;
     const chatMetadata = context.chatMetadata || {};
 
-    // 1. 清理 chatMetadata
+    const beforeBytes = getByteLength(chat) + getByteLength(chatMetadata);
+
+    // 1. 清理首行 chatMetadata (释放 LWB_SNAP 与 variables)
     if (chatMetadata) {
         if (!opts.preserveAuthorNote) {
             delete chatMetadata.note_prompt;
@@ -332,22 +176,25 @@ async function applyCleanToActiveChat(opts) {
             delete chatMetadata.variables;
             delete chatMetadata.LWB_PLOT_APPLIED_KEY;
             delete chatMetadata.LWB_PENDING_VAREVENT_BLOCKS;
+            delete chatMetadata.LWB_V1_OWNED_ROOTS;
+            delete chatMetadata.LWB_V1_OWNED_ROOTS_MIGRATED;
+            delete chatMetadata.LWB_RULES;
         }
     }
 
-    // 2. 清理消息
+    // 2. 清理消息数组 (释放未选 Swipes、Metadata 与 Extra)
     for (let i = 0; i < chat.length; i++) {
         const msg = chat[i];
         if (!msg) continue;
 
-        // 清理 Swipes
+        // 清理 Swipes：只保留当前展示选中的 mes，删除历史废弃 swipe
         if (opts.cleanSwipes) {
             msg.swipes = [msg.mes || ''];
             msg.swipe_id = 0;
             delete msg.swipe_info;
         }
 
-        // 清理 Metadata
+        // 清理 Metadata 向量
         if (opts.cleanMetadata) {
             delete msg.metadata;
         }
@@ -358,14 +205,199 @@ async function applyCleanToActiveChat(opts) {
         }
     }
 
-    // 3. 保存并重载
+    // 3. 【最关键一步】双重保存：必须同时保存 Metadata 和 Chat 才能彻底写入硬盘！
+    if (typeof context.saveMetadata === 'function') {
+        await context.saveMetadata();
+    }
     if (typeof context.saveChat === 'function') {
         await context.saveChat();
     }
+
+    // 4. 重载当前聊天视图
     if (typeof context.reloadCurrentChat === 'function') {
         await context.reloadCurrentChat();
     } else if (typeof window.reloadCurrentChat === 'function') {
         await window.reloadCurrentChat();
+    }
+
+    const afterBytes = getByteLength(context.chat) + getByteLength(context.chatMetadata || {});
+    return Math.max(0, beforeBytes - afterBytes);
+}
+
+// 执行模式分流
+async function executeClean(mode) {
+    const context = getSTContext();
+    if (!context || !context.chat || context.chat.length === 0) {
+        if (window.toastr) window.toastr.warning('当前没有打开任何聊天记录！');
+        return;
+    }
+
+    const opts = getCleanerOptions();
+
+    // 模式 1：自动备份并就地彻底瘦身 (最推荐、最可靠，直接干掉1MB+垃圾)
+    if (mode === 'backup_clean') {
+        try {
+            if (window.toastr) window.toastr.info('正在为原始聊天创建备份检查点...', '', { timeOut: 2000 });
+
+            // 先自动打一个检查点备份（不切换窗口，确保原版 100% 留存）
+            if (typeof context.executeSlashCommands === 'function') {
+                await context.executeSlashCommands('/checkpoint-create');
+            } else if (typeof window.executeSlashCommands === 'function') {
+                await window.executeSlashCommands('/checkpoint-create');
+            }
+
+            await new Promise(r => setTimeout(r, 600));
+
+            // 对当前会话进行彻底净化
+            const freed = await applyCleanToActiveChat(opts);
+
+            const msg = `🎉 瘦身大获成功！已自动创建安全备份，当前聊天直接释放了 ${formatBytes(freed)} 空间！`;
+            if (window.toastr) window.toastr.success(msg, '净化完成', { timeOut: 5000 });
+            showLog(msg);
+
+            analyzeCurrentChat();
+        } catch (err) {
+            console.error('备份并瘦身出错:', err);
+            if (window.toastr) window.toastr.error('执行失败：' + err.message);
+        }
+        return;
+    }
+
+    // 模式 2：另存为新分支
+    if (mode === 'branch') {
+        try {
+            if (window.toastr) window.toastr.info('正在创建新分支并进行净化...', '', { timeOut: 3000 });
+
+            // 监听分支切换完成事件
+            let switchFinished = false;
+            const chatChangeHandler = () => { switchFinished = true; };
+            if (context.eventSource && context.event_types) {
+                context.eventSource.once(context.event_types.CHAT_CHANGED, chatChangeHandler);
+            }
+
+            if (typeof context.executeSlashCommands === 'function') {
+                await context.executeSlashCommands('/branch-create');
+            } else if (typeof window.executeSlashCommands === 'function') {
+                await window.executeSlashCommands('/branch-create');
+            }
+
+            // 手机 Termux 读写大文件较慢，等待分支完全加载 (最多等 2.5 秒)
+            let waitTime = 0;
+            while (!switchFinished && waitTime < 2500) {
+                await new Promise(r => setTimeout(r, 200));
+                waitTime += 200;
+            }
+
+            // 在新分支上应用清洗并保存
+            const freed = await applyCleanToActiveChat(opts);
+
+            const msg = `🌿 新分支已创建并完成瘦身！释放空间: ${formatBytes(freed)}，原始聊天不受影响。`;
+            if (window.toastr) window.toastr.success(msg, '分支净化成功', { timeOut: 5000 });
+            showLog(msg);
+
+            analyzeCurrentChat();
+        } catch (err) {
+            console.error('分支创建失败:', err);
+            if (window.toastr) window.toastr.error('创建分支失败：' + err.message);
+        }
+        return;
+    }
+
+    // 模式 3：直接就地覆盖 (不备份)
+    if (mode === 'overwrite') {
+        const confirmed = window.confirm('⚠️ 警告：确定直接就地瘦身当前记录吗？\n建议使用【自动备份并彻底瘦身】以防万一。');
+        if (!confirmed) return;
+
+        try {
+            const freed = await applyCleanToActiveChat(opts);
+            const msg = `✅ 就地瘦身完成！成功释放 ${formatBytes(freed)} 空间。`;
+            if (window.toastr) window.toastr.success(msg);
+            showLog(msg);
+            analyzeCurrentChat();
+        } catch (err) {
+            if (window.toastr) window.toastr.error('清理失败：' + err.message);
+        }
+        return;
+    }
+
+    // 模式 4：直接下载导出文件 (.jsonl)
+    if (mode === 'download') {
+        try {
+            const cleanedLines = [];
+            const chatMetadata = context.chatMetadata || {};
+
+            const cleanedHeader = {
+                user_name: context.characterId !== undefined && context.characters && context.characters[context.characterId] ? context.characters[context.characterId].name : "User",
+                character_name: "Character",
+                create_date: "",
+                chat_metadata: {}
+            };
+
+            if (opts.preserveAuthorNote) {
+                const noteKeys = ['note_prompt', 'note_interval', 'note_position', 'note_depth', 'note_role', 'authors_note', 'author_note'];
+                for (const k of Object.keys(chatMetadata)) {
+                    if (noteKeys.includes(k) || k.toLowerCase().includes('author') || k.toLowerCase().includes('note')) {
+                        cleanedHeader.chat_metadata[k] = chatMetadata[k];
+                    }
+                }
+            }
+            if (chatMetadata.integrity) cleanedHeader.chat_metadata.integrity = chatMetadata.integrity;
+
+            if (!opts.cleanLwbSnap) {
+                if (chatMetadata.LWB_SNAP) cleanedHeader.chat_metadata.LWB_SNAP = chatMetadata.LWB_SNAP;
+                if (chatMetadata.variables) cleanedHeader.chat_metadata.variables = chatMetadata.variables;
+            }
+
+            cleanedLines.push(JSON.stringify(cleanedHeader));
+
+            for (const origMsg of context.chat) {
+                if (!origMsg) continue;
+                const cleanMsg = {
+                    name: origMsg.name || "",
+                    is_user: !!origMsg.is_user,
+                    is_system: !!origMsg.is_system,
+                    send_date: origMsg.send_date || "",
+                    mes: origMsg.mes || ""
+                };
+
+                if (opts.cleanSwipes) {
+                    cleanMsg.swipes = [cleanMsg.mes || ''];
+                    cleanMsg.swipe_id = 0;
+                } else if (Array.isArray(origMsg.swipes)) {
+                    cleanMsg.swipes = origMsg.swipes;
+                    cleanMsg.swipe_id = origMsg.swipe_id || 0;
+                    if (origMsg.swipe_info) cleanMsg.swipe_info = origMsg.swipe_info;
+                }
+
+                if (!opts.cleanMetadata && origMsg.metadata) {
+                    cleanMsg.metadata = origMsg.metadata;
+                }
+                if (!opts.cleanExtra && origMsg.extra) {
+                    cleanMsg.extra = origMsg.extra;
+                }
+
+                cleanedLines.push(JSON.stringify(cleanMsg));
+            }
+
+            const blob = new Blob([cleanedLines.join('\n')], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const currentChatName = (context.chatId || '酒馆聊天').replace(/\.jsonl$/i, '');
+            a.download = `[已净化]_${currentChatName}.jsonl`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            const freed = Math.max(0, (getByteLength(context.chat) + getByteLength(chatMetadata)) - blob.size);
+            const msg = `📥 净化版文件已导出！体积成功缩减了 ${formatBytes(freed)}`;
+            if (window.toastr) window.toastr.success(msg);
+            showLog(msg);
+        } catch (err) {
+            console.error('导出失败:', err);
+            if (window.toastr) window.toastr.error('导出失败：' + err.message);
+        }
     }
 }
 
@@ -374,11 +406,23 @@ function showLog(text) {
     $log.text(text).fadeIn();
 }
 
-// 绑定事件与初始化
 function initEventListeners() {
+    // 折叠展开兼容处理 (防止部分酒馆主题未自动绑定事件)
+    $('.st-chat-cleaner-settings .inline-drawer-toggle').off('click').on('click', function (e) {
+        // 如果点击的是内部按钮，不触发折叠
+        if ($(e.target).closest('button, input, label').length) return;
+        const $drawer = $(this).closest('.inline-drawer');
+        $drawer.find('.inline-drawer-content').stop().slideToggle(200);
+        $drawer.find('.inline-drawer-icon').toggleClass('down');
+    });
+
     $('#st_cleaner_refresh_btn').off('click').on('click', () => {
         analyzeCurrentChat();
         if (window.toastr) window.toastr.info('健康数据已更新');
+    });
+
+    $('#st_cleaner_btn_backup_clean').off('click').on('click', () => {
+        executeClean('backup_clean');
     });
 
     $('#st_cleaner_btn_branch').off('click').on('click', () => {
@@ -393,13 +437,12 @@ function initEventListeners() {
         executeClean('download');
     });
 
-    // 选项变更自动更新诊断
     $('.cleaner-checkbox-row input').off('change').on('change', () => {
         analyzeCurrentChat();
     });
 }
 
-// 扩展初始化入口
+// 扩展加载入口
 jQuery(async () => {
     try {
         const context = getSTContext();
@@ -408,7 +451,6 @@ jQuery(async () => {
         if (context && typeof context.renderExtensionTemplateAsync === 'function') {
             template = await context.renderExtensionTemplateAsync('third-party/st-chat-cleaner', 'settings');
         } else {
-            // 备用获取本地模板
             const response = await fetch('/scripts/extensions/third-party/st-chat-cleaner/settings.html');
             if (response.ok) {
                 template = await response.text();
@@ -420,13 +462,12 @@ jQuery(async () => {
             initEventListeners();
             analyzeCurrentChat();
 
-            // 监听酒馆聊天切换和消息接收事件，自动刷新体检数据
             if (context && context.eventSource && context.event_types) {
                 context.eventSource.on(context.event_types.CHAT_CHANGED, () => {
-                    setTimeout(analyzeCurrentChat, 500);
+                    setTimeout(analyzeCurrentChat, 600);
                 });
                 context.eventSource.on(context.event_types.MESSAGE_RECEIVED, () => {
-                    setTimeout(analyzeCurrentChat, 500);
+                    setTimeout(analyzeCurrentChat, 600);
                 });
             }
         }
