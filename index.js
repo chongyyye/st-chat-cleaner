@@ -368,12 +368,14 @@ async function executeClean(mode) {
                 cleanedLines.push(JSON.stringify(cleanMsg));
             }
 
-            const blob = new Blob([cleanedLines.join('\n')], { type: 'application/json' });
+            // 使用 text/plain，防止安卓 Chrome 强行在尾部追加 .json 导致酒馆识别成非 jsonl 文件
+            const blob = new Blob([cleanedLines.join('\n')], { type: 'text/plain;charset=utf-8' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            const currentChatName = (context.chatId || '酒馆聊天').replace(/\.jsonl$/i, '');
-            a.download = `[已净化]_${currentChatName}.jsonl`;
+            // 去除方括号等特殊符号，保证安卓文件管理器与酒馆完美识别
+            const rawName = (context.chatId || 'chat').replace(/\.jsonl$/i, '').replace(/[^a-zA-Z0-9_\-\u4e00-\u9fa5]/g, '_');
+            a.download = `${rawName}_cleaned.jsonl`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
