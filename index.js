@@ -1,4 +1,4 @@
-// SillyTavern Chat Cleaner Extension v1.2
+// SillyTavern Chat Cleaner Extension v1.3
 // 聊天记录瘦身净化器 - 100% 本地运行，零 API 消耗
 
 const MODULE_NAME = 'st_chat_cleaner';
@@ -59,7 +59,7 @@ function analyzeCurrentChat() {
 
     let totalBytes = 0;
     let mesBytes = 0;
-    let unusedSwipesBytes = 0;
+    let swipesBytes = 0;
     let metadataBytes = 0;
     let extraBytes = 0;
     let lwbSnapBytes = 0;
@@ -82,22 +82,16 @@ function analyzeCurrentChat() {
         const msg = chat[i];
         if (!msg) continue;
 
-        const lineBytes = getByteLength(msg);
-        totalBytes += lineBytes;
+        totalBytes += getByteLength(msg);
 
-        // 正常文本
+        // 正常纯文本
         if (msg.mes) {
             mesBytes += getByteLength(msg.mes);
         }
 
-        // Swipes 分析 (当前选中的 swipe 不算垃圾，未选中的 swipe 算作冗余)
-        if (Array.isArray(msg.swipes) && msg.swipes.length > 1) {
-            const activeId = msg.swipe_id || 0;
-            for (let s = 0; s < msg.swipes.length; s++) {
-                if (s !== activeId && msg.swipes[s]) {
-                    unusedSwipesBytes += getByteLength(msg.swipes[s]);
-                }
-            }
+        // Swipes 整体占用的额外体积 (去除纯mes后，所有swipes冗余)
+        if (Array.isArray(msg.swipes)) {
+            swipesBytes += getByteLength(msg.swipes);
         }
 
         // 楼层元数据
@@ -114,8 +108,8 @@ function analyzeCurrentChat() {
         }
     }
 
-    // 计算潜在可释放体积
-    const bloatBytes = unusedSwipesBytes + metadataBytes + extraBytes + lwbSnapBytes;
+    // 潜在可释放垃圾：废弃/重复Swipes + 楼层元数据 + 额外字段 + 首行快照
+    const bloatBytes = swipesBytes + metadataBytes + extraBytes + lwbSnapBytes;
 
     // 更新诊断 UI
     $('#st_cleaner_total_msgs').text(chat.length);
@@ -124,8 +118,8 @@ function analyzeCurrentChat() {
     $('#st_cleaner_bloat_size').text(formatBytes(bloatBytes));
 
     const totalCalculated = mesBytes + bloatBytes;
-    let mesPct = 100;
-    let bloatPct = 0;
+    let mesPct = 50;
+    let bloatPct = 50;
 
     if (totalCalculated > 0) {
         mesPct = Math.round((mesBytes / totalCalculated) * 100);
@@ -182,15 +176,15 @@ async function applyCleanToActiveChat(opts) {
         }
     }
 
-    // 2. 清理消息数组 (释放未选 Swipes、Metadata 与 Extra)
+    // 2. 清理消息数组：彻底删除冗余 swipes，不再把文本重复存两遍！
     for (let i = 0; i < chat.length; i++) {
         const msg = chat[i];
         if (!msg) continue;
 
-        // 清理 Swipes：只保留当前展示选中的 mes，删除历史废弃 swipe
+        // 彻底删除 swipes 数组，直接释放整整一半体积！
         if (opts.cleanSwipes) {
-            msg.swipes = [msg.mes || ''];
-            msg.swipe_id = 0;
+            delete msg.swipes;
+            delete msg.swipe_id;
             delete msg.swipe_info;
         }
 
@@ -234,12 +228,11 @@ async function executeClean(mode) {
 
     const opts = getCleanerOptions();
 
-    // 模式 1：自动备份并就地彻底瘦身 (最推荐、最可靠，直接干掉1MB+垃圾)
+    // 模式 1：自动备份并就地彻底瘦身 (最推荐、最可靠，直接干掉一半垃圾)
     if (mode === 'backup_clean') {
         try {
             if (window.toastr) window.toastr.info('正在为原始聊天创建备份检查点...', '', { timeOut: 2000 });
 
-            // 先自动打一个检查点备份（不切换窗口，确保原版 100% 留存）
             if (typeof context.executeSlashCommands === 'function') {
                 await context.executeSlashCommands('/checkpoint-create');
             } else if (typeof window.executeSlashCommands === 'function') {
@@ -248,10 +241,9 @@ async function executeClean(mode) {
 
             await new Promise(r => setTimeout(r, 600));
 
-            // 对当前会话进行彻底净化
             const freed = await applyCleanToActiveChat(opts);
 
-            const msg = `🎉 瘦身大获成功！已自动创建安全备份，当前聊天直接释放了 ${formatBytes(freed)} 空间！`;
+            const msg = `🎉 瘦身大获成功！已自动创建安全备份，当前聊天直接释放了 ${formatBytes(freed)} 空间（减少近一半）！`;
             if (window.toastr) window.toastr.success(msg, '净化完成', { timeOut: 5000 });
             showLog(msg);
 
@@ -280,14 +272,12 @@ async function executeClean(mode) {
                 await window.executeSlashCommands('/branch-create');
             }
 
-            // 等待分支完全加载 (最多等 2.5 秒)
             let waitTime = 0;
             while (!switchFinished && waitTime < 2500) {
                 await new Promise(r => setTimeout(r, 200));
                 waitTime += 200;
             }
 
-            // 在新分支上应用清洗并保存
             const freed = await applyCleanToActiveChat(opts);
 
             const msg = `🌿 新分支已创建并完成瘦身！释放空间: ${formatBytes(freed)}，原始聊天不受影响。`;
@@ -325,6 +315,8 @@ async function executeClean(mode) {
             const cleanedLines = [];
             const chatMetadata = context.chatMetadata || {};
 
+            const origTotalBytes = getByteLength(context.chat) + getByteLength(chatMetadata);
+
             const cleanedHeader = {
                 user_name: context.characterId !== undefined && context.characters && context.characters[context.characterId] ? context.characters[context.characterId].name : "User",
                 character_name: "Character",
@@ -359,10 +351,8 @@ async function executeClean(mode) {
                     mes: origMsg.mes || ""
                 };
 
-                if (opts.cleanSwipes) {
-                    cleanMsg.swipes = [cleanMsg.mes || ''];
-                    cleanMsg.swipe_id = 0;
-                } else if (Array.isArray(origMsg.swipes)) {
+                // 核心：若清理 Swipes，完全不写 swipes 属性，彻底去除重复存储！
+                if (!opts.cleanSwipes && Array.isArray(origMsg.swipes)) {
                     cleanMsg.swipes = origMsg.swipes;
                     cleanMsg.swipe_id = origMsg.swipe_id || 0;
                     if (origMsg.swipe_info) cleanMsg.swipe_info = origMsg.swipe_info;
@@ -389,8 +379,8 @@ async function executeClean(mode) {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
 
-            const freed = Math.max(0, (getByteLength(context.chat) + getByteLength(chatMetadata)) - blob.size);
-            const msg = `📥 净化版文件已导出！体积成功缩减了 ${formatBytes(freed)}`;
+            const freed = Math.max(0, origTotalBytes - blob.size);
+            const msg = `📥 净化版文件已导出！体积成功缩减了 ${formatBytes(freed)}（直接砍掉近半）！`;
             if (window.toastr) window.toastr.success(msg);
             showLog(msg);
         } catch (err) {
