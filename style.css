@@ -1,27 +1,18 @@
-/* SillyTavern Chat Cleaner Extension Styles */
+/* SillyTavern Chat Cleaner Extension Styles v1.1 */
 
-.st-chat-cleaner-container {
+.st-chat-cleaner-settings {
+    margin-bottom: 10px;
+}
+
+.st-chat-cleaner-settings .inline-drawer-header {
+    cursor: pointer;
+    user-select: none;
+}
+
+.st-chat-cleaner-settings .inline-drawer-content {
     padding: 10px;
     font-family: inherit;
     color: var(--SmartThemeBodyColor, #e0e0e0);
-}
-
-.cleaner-header {
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.cleaner-title {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 1.15em;
-    font-weight: 600;
-}
-
-.cleaner-icon {
-    font-size: 1.3em;
 }
 
 .cleaner-badge {
@@ -32,12 +23,7 @@
     padding: 2px 6px;
     border-radius: 4px;
     font-weight: bold;
-}
-
-.cleaner-subtext {
-    font-size: 0.85em;
-    opacity: 0.7;
-    margin-top: 4px;
+    margin-left: 6px;
 }
 
 /* Cards */
@@ -46,7 +32,7 @@
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 8px;
     padding: 12px;
-    margin-bottom: 15px;
+    margin-bottom: 12px;
 }
 
 .card-header {
@@ -214,15 +200,15 @@
 .cleaner-actions {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    margin-top: 15px;
+    gap: 8px;
+    margin-top: 12px;
 }
 
 .cleaner-main-btn {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 16px;
+    padding: 10px 14px;
     border-radius: 8px;
     border: none;
     cursor: pointer;
@@ -230,24 +216,32 @@
     transition: all 0.2s ease;
 }
 
-.cleaner-main-btn.btn-branch {
-    background: linear-gradient(135deg, #1e7e34, #28a745);
+.cleaner-main-btn.btn-backup-clean {
+    background: linear-gradient(135deg, #15803d, #22c55e);
     color: white;
-    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+    box-shadow: 0 3px 10px rgba(34, 197, 94, 0.3);
+}
+
+.cleaner-main-btn.btn-backup-clean:hover {
+    background: linear-gradient(135deg, #166534, #15803d);
+}
+
+.cleaner-main-btn.btn-branch {
+    background: linear-gradient(135deg, #0284c7, #0ea5e9);
+    color: white;
+    box-shadow: 0 3px 10px rgba(14, 165, 233, 0.3);
 }
 
 .cleaner-main-btn.btn-branch:hover {
-    background: linear-gradient(135deg, #218838, #34c759);
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(40, 167, 69, 0.4);
+    background: linear-gradient(135deg, #0369a1, #0284c7);
 }
 
 .cleaner-main-btn .btn-icon {
-    font-size: 1.8em;
+    font-size: 1.6em;
 }
 
 .btn-primary-text {
-    font-size: 1em;
+    font-size: 0.95em;
     font-weight: 600;
 }
 
@@ -284,18 +278,14 @@
     border-color: rgba(255, 149, 0, 0.3);
 }
 
-.cleaner-sub-btn.btn-overwrite:hover {
-    background: rgba(255, 149, 0, 0.15);
-}
-
 /* Log Box */
 .cleaner-log-box {
-    margin-top: 12px;
-    padding: 10px;
+    margin-top: 10px;
+    padding: 8px 12px;
     background: rgba(0, 0, 0, 0.35);
     border-radius: 6px;
     font-size: 0.82em;
     line-height: 1.5;
     white-space: pre-wrap;
-    border-left: 3px solid #28a745;
+    border-left: 3px solid #22c55e;
 }
