@@ -1,0 +1,301 @@
+/* SillyTavern Chat Cleaner Extension Styles */
+
+.st-chat-cleaner-container {
+    padding: 10px;
+    font-family: inherit;
+    color: var(--SmartThemeBodyColor, #e0e0e0);
+}
+
+.cleaner-header {
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cleaner-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.15em;
+    font-weight: 600;
+}
+
+.cleaner-icon {
+    font-size: 1.3em;
+}
+
+.cleaner-badge {
+    font-size: 0.75em;
+    background: rgba(40, 167, 69, 0.25);
+    color: #4cd964;
+    border: 1px solid rgba(40, 167, 69, 0.4);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.cleaner-subtext {
+    font-size: 0.85em;
+    opacity: 0.7;
+    margin-top: 4px;
+}
+
+/* Cards */
+.cleaner-card {
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 15px;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.card-title {
+    font-weight: 600;
+    font-size: 0.95em;
+}
+
+.cleaner-btn-refresh {
+    font-size: 0.8em;
+    padding: 3px 8px;
+    cursor: pointer;
+}
+
+/* Diagnostic Grid */
+.diagnostic-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.diag-item {
+    background: rgba(255, 255, 255, 0.04);
+    padding: 8px 10px;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+}
+
+.diag-label {
+    font-size: 0.75em;
+    opacity: 0.7;
+}
+
+.diag-val {
+    font-size: 1.05em;
+    font-weight: 600;
+    margin-top: 2px;
+}
+
+.diag-val.highlight {
+    color: #5ac8fa;
+}
+
+.diag-val.danger {
+    color: #ff9500;
+}
+
+/* Size Bar */
+.size-bar-container {
+    margin-top: 8px;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 8px;
+    border-radius: 6px;
+}
+
+.size-bar-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75em;
+    margin-bottom: 5px;
+}
+
+.danger-text {
+    color: #ff9500;
+}
+
+.size-bar-track {
+    height: 8px;
+    display: flex;
+    border-radius: 4px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.size-bar-segment.segment-mes {
+    background: #34c759;
+    transition: width 0.3s ease;
+}
+
+.size-bar-segment.segment-bloat {
+    background: #ff9500;
+    transition: width 0.3s ease;
+}
+
+/* Note Status Box */
+.note-status-box {
+    margin-top: 10px;
+    padding: 8px 10px;
+    background: rgba(52, 199, 89, 0.12);
+    border: 1px solid rgba(52, 199, 89, 0.25);
+    border-radius: 6px;
+    font-size: 0.82em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #bbf7d0;
+}
+
+/* Options */
+.cleaner-checkbox-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+}
+
+.cleaner-checkbox-row:last-child {
+    border-bottom: none;
+}
+
+.cleaner-checkbox-row input[type="checkbox"] {
+    margin-top: 3px;
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+}
+
+.checkbox-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.cb-title {
+    font-size: 0.88em;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.cb-desc {
+    font-size: 0.75em;
+    opacity: 0.65;
+    margin-top: 2px;
+}
+
+.tag-rec {
+    background: rgba(52, 199, 89, 0.2);
+    color: #4cd964;
+    font-size: 0.75em;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-weight: bold;
+}
+
+.tag-clean {
+    background: rgba(255, 149, 0, 0.2);
+    color: #ff9500;
+    font-size: 0.75em;
+    padding: 1px 5px;
+    border-radius: 3px;
+}
+
+/* Actions */
+.cleaner-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.cleaner-main-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s ease;
+}
+
+.cleaner-main-btn.btn-branch {
+    background: linear-gradient(135deg, #1e7e34, #28a745);
+    color: white;
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+.cleaner-main-btn.btn-branch:hover {
+    background: linear-gradient(135deg, #218838, #34c759);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(40, 167, 69, 0.4);
+}
+
+.cleaner-main-btn .btn-icon {
+    font-size: 1.8em;
+}
+
+.btn-primary-text {
+    font-size: 1em;
+    font-weight: 600;
+}
+
+.btn-secondary-text {
+    font-size: 0.75em;
+    opacity: 0.85;
+    margin-top: 2px;
+}
+
+.cleaner-sub-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.cleaner-sub-btn {
+    flex: 1;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.08);
+    color: inherit;
+    font-size: 0.82em;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    text-align: center;
+}
+
+.cleaner-sub-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.cleaner-sub-btn.btn-overwrite {
+    color: #ff9500;
+    border-color: rgba(255, 149, 0, 0.3);
+}
+
+.cleaner-sub-btn.btn-overwrite:hover {
+    background: rgba(255, 149, 0, 0.15);
+}
+
+/* Log Box */
+.cleaner-log-box {
+    margin-top: 12px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 6px;
+    font-size: 0.82em;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    border-left: 3px solid #28a745;
+}
