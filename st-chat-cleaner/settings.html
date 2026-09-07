@@ -1,0 +1,125 @@
+<div id="st_chat_cleaner_wrapper" class="st-chat-cleaner-container">
+    <div class="cleaner-header">
+        <div class="cleaner-title">
+            <span class="cleaner-icon">🧹</span>
+            <span class="cleaner-title-text">聊天记录瘦身净化器</span>
+            <span class="cleaner-badge">v1.0</span>
+        </div>
+        <div class="cleaner-subtext">一键剔除废弃 Swipes、冗余向量与扩展缓存，彻底告别卡顿</div>
+    </div>
+
+    <!-- 实时体积健康诊断卡片 -->
+    <div class="cleaner-card diagnostic-card">
+        <div class="card-header">
+            <span class="card-title">🔬 当前聊天健康诊断</span>
+            <button id="st_cleaner_refresh_btn" class="menu_button cleaner-btn-refresh" title="重新诊断当前聊天">🔄 刷新</button>
+        </div>
+        <div class="diagnostic-grid">
+            <div class="diag-item">
+                <span class="diag-label">总楼层数</span>
+                <span id="st_cleaner_total_msgs" class="diag-val">0</span>
+            </div>
+            <div class="diag-item">
+                <span class="diag-label">预估总体积</span>
+                <span id="st_cleaner_total_size" class="diag-val highlight">0.00 MB</span>
+            </div>
+            <div class="diag-item">
+                <span class="diag-label">纯净文本体积</span>
+                <span id="st_cleaner_mes_size" class="diag-val">0.00 MB</span>
+            </div>
+            <div class="diag-item">
+                <span class="diag-label">可释放垃圾数据</span>
+                <span id="st_cleaner_bloat_size" class="diag-val danger">0.00 MB</span>
+            </div>
+        </div>
+
+        <!-- 体积构成进度条 -->
+        <div class="size-bar-container">
+            <div class="size-bar-labels">
+                <span>有效对话: <b id="st_cleaner_mes_pct">0%</b></span>
+                <span class="danger-text">可瘦身空间: <b id="st_cleaner_bloat_pct">0%</b></span>
+            </div>
+            <div class="size-bar-track">
+                <div id="st_cleaner_bar_mes" class="size-bar-segment segment-mes" style="width: 50%;"></div>
+                <div id="st_cleaner_bar_bloat" class="size-bar-segment segment-bloat" style="width: 50%;"></div>
+            </div>
+        </div>
+
+        <div id="st_cleaner_note_status" class="note-status-box">
+            <span class="note-icon">📝</span>
+            <span id="st_cleaner_note_text">检测到作者注释：未设置</span>
+        </div>
+    </div>
+
+    <!-- 清理选项勾选区 -->
+    <div class="cleaner-card options-card">
+        <div class="card-title">⚙️ 净化与保留选项</div>
+        
+        <label class="cleaner-checkbox-row recommended-row">
+            <input type="checkbox" id="st_cleaner_opt_author_note" checked />
+            <div class="checkbox-text">
+                <span class="cb-title">保留作者注释 (Author's Note) <span class="tag-rec">推荐保留</span></span>
+                <span class="cb-desc">完整保留作者注释文本、插入深度与频率，绝不丢失关键故事设定</span>
+            </div>
+        </label>
+
+        <label class="cleaner-checkbox-row">
+            <input type="checkbox" id="st_cleaner_opt_swipes" checked />
+            <div class="checkbox-text">
+                <span class="cb-title">清理未选中的历史 Swipes <span class="tag-clean">瘦身核心</span></span>
+                <span class="cb-desc">仅保留当前楼层选中的发言，彻底丢弃被放弃的历史重新生成数据</span>
+            </div>
+        </label>
+
+        <label class="cleaner-checkbox-row">
+            <input type="checkbox" id="st_cleaner_opt_lwb_snap" checked />
+            <div class="checkbox-text">
+                <span class="cb-title">清理首行世界书/变量快照缓存 (LWB_SNAP / Variables)</span>
+                <span class="cb-desc">清理扩展在聊天首行堆积的历史快照（通常可直接释放 1MB ~ 数十MB）</span>
+            </div>
+        </label>
+
+        <label class="cleaner-checkbox-row">
+            <input type="checkbox" id="st_cleaner_opt_metadata" checked />
+            <div class="checkbox-text">
+                <span class="cb-title">清理楼层隐藏元数据 (Metadata) 与巨型向量</span>
+                <span class="cb-desc">清理单条消息中残留的向量嵌入、统计日志与调试信息</span>
+            </div>
+        </label>
+
+        <label class="cleaner-checkbox-row">
+            <input type="checkbox" id="st_cleaner_opt_extra" checked />
+            <div class="checkbox-text">
+                <span class="cb-title">清理第三方扩展附加属性 (Extra 扩展字段)</span>
+                <span class="cb-desc">清理插件遗留的辅助字段，还原最纯净的消息结构</span>
+            </div>
+        </label>
+    </div>
+
+    <!-- 核心操作按钮区 -->
+    <div class="cleaner-actions">
+        <!-- 另存为新分支聊天 (最安全推荐) -->
+        <button id="st_cleaner_btn_branch" class="cleaner-main-btn btn-branch" title="创建全新净化版聊天分支，原始聊天原封不动">
+            <span class="btn-icon">🌿</span>
+            <div class="btn-content">
+                <div class="btn-primary-text">另存为净化新分支 (推荐)</div>
+                <div class="btn-secondary-text">原聊天100%不受影响，自动生成并切换到新分支</div>
+            </div>
+        </button>
+
+        <div class="cleaner-sub-actions">
+            <!-- 直接下载导出文件 -->
+            <button id="st_cleaner_btn_download" class="cleaner-sub-btn btn-download" title="直接在浏览器下载已净化的 .jsonl 文件">
+                📥 导出净化版 .jsonl
+            </button>
+
+            <!-- 覆盖当前聊天 -->
+            <button id="st_cleaner_btn_overwrite" class="cleaner-sub-btn btn-overwrite" title="直接覆盖当前聊天，就地瘦身">
+                ⚠️ 直接覆盖当前聊天
+            </button>
+        </div>
+    </div>
+
+    <!-- 状态反馈与结果提示 -->
+    <div id="st_cleaner_result_log" class="cleaner-log-box" style="display: none;"></div>
+</div>
